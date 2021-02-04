@@ -29,10 +29,8 @@ void capitalizeAll(char *s) {
 // the same way as `capitalizeAll`.  (In this function, `s` cannot be modified directly and
 // must be done in the new memory you will allocate.)
 char *capitalizeAll_alloc(const char *s) {
-  printf("inside function: \"%s\" -> \n", s);
-  printf("length:%d", (int) sizeof(s));
-  size_t len = sizeof(s) / sizeof(char);
-  char *result = malloc(sizeof(s));
+  size_t len = strlen(s);
+  char *result = malloc(sizeof(char) * len);
   for(size_t i = 0; i < len; i++) {
     if (s[i] >= 97 && s[i] <= 122) {
       result[i] = s[i] - 32;
