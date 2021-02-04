@@ -13,11 +13,29 @@ const char *emoji_favorite() {
 // Count the number of emoji in the UTF-8 string `utf8str`, returning the count.  You should
 // consider everything in the ranges starting from (and including) U+1F000 up to (and including) U+1F9FF.
 int emoji_count(char *utf8str) {
-  int count;
+  int count = 0;
   for(size_t i = 0; i < strlen(utf8str); i++) {
-    if (utf8str[i] >= 3 && utf8str[i] <= 1000) {
-      //"\xF0\x9F\x00\x00"  "\xF0\x9F\xA7\xBF"
-      count++;
+    if (utf8str[i] == '\xF0') {
+      i++;
+      if (utf8str[i] == '\x9F') {
+        i++;
+        if (utf8str[i] > '\x80' && utf8str[i] < '\xFA'){
+          i++;
+          count++;
+        }
+        if (utf8str[i] == '\x80') {
+          i++;
+          if (utf8str[i] >= '\x80'){
+            count++;
+          }
+        }
+        if (utf8str[i] == '\xA7') {
+          i++;
+          if (utf8str[i] <= '\xBF'){
+            count++;
+          }
+        }
+      }
     }
   }
   return count;
@@ -29,7 +47,22 @@ int emoji_count(char *utf8str) {
 // - Invert "😊" U+1F60A ("\xF0\x9F\x98\x8A") into a non-smiling face.
 // - Choose at least five more emoji to invert.
 void emoji_invertChar(char *utf8str) {
+  // - Invert "😊" U+1F60A ("\xF0\x9F\x98\x8A") into a non-smiling face 😔.
+  if (utf8str[0] == '\xF0' && utf8str[1] == '\x9F' && utf8str[2] == '\x98' && utf8str[3] == '\x8A') {
+    utf8str[3] = '\x9E';
+  }
+  // Inverts 💕 into 💔
+  if (utf8str[0] == '\xF0' && utf8str[1] == '\x9F' && utf8str[2] == '\x92' && utf8str[3] == '\x95') {
+    utf8str[3] = '\x94';
+  }
 
+  // Inverts 🚀 into 📉 
+
+  if (utf8str[0] == '\xF0' && utf8str[1] == '\x9F' && utf8str[2] == '\x9A' && utf8str[3] == '\x80') {
+    utf8str[2] = '\x93';
+    utf8str[3] = '\x89';
+  }
+  
 }
 
 
