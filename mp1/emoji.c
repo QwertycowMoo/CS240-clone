@@ -62,7 +62,21 @@ void emoji_invertChar(char *utf8str) {
     utf8str[2] = '\x93';
     utf8str[3] = '\x89';
   }
+
+  // Inverts American Flag into Russian Flag
+  if (utf8str[0] == '\xF0' && utf8str[1] == '\x9F' && utf8str[2] == '\x87' && utf8str[3] == '\xBA') {
+    utf8str[3] = '\xB7';
+  }
+
+  // Inverts 😍 into 😢
+  if (utf8str[0] == '\xF0' && utf8str[1] == '\x9F' && utf8str[2] == '\x98' && utf8str[3] == '\x8D') {
+    utf8str[3] = '\xA2';
+  }
   
+   // Inverts 🍎 into 🍏
+  if (utf8str[0] == '\xF0' && utf8str[1] == '\x9F' && utf8str[2] == '\x8D' && utf8str[3] == '\x8E') {
+    utf8str[3] = '\x8F';
+  }
 }
 
 
