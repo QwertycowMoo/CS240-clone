@@ -91,7 +91,7 @@ void part3() {
 
 
   for (int i = 0; i < 10; i++) {
-    char *s_alloc = emoji_random_alloc();
+    char *s_alloc = emojirandom_alloc();
     printf("emoji_radnom_alloc (#%d): \"%s\"", (i+1), s_alloc);
     free(s_alloc);
   }

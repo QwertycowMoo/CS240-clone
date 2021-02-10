@@ -84,6 +84,7 @@ void emoji_invertChar(char *utf8str) {
 // `emoji_invertChar` function on each character.
 void emoji_invertAll(char *utf8str) {
   for (size_t i = 0; i < sizeof(utf8str); i++) {
+    printf("%d \n", utf8str[i]);
     emoji_invertChar(&utf8str[i]);
   }
 }
@@ -98,5 +99,6 @@ char *emoji_random_alloc() {
   result[2] = '\x9F';
   result[3] = byte1;
   result[4] = byte2;
+  printf("result: %s \n", result);
   return result;
 }
