@@ -83,22 +83,21 @@ void emoji_invertChar(char *utf8str) {
 // Modify the UTF-8 string `utf8str` to invert ALL of the character by calling your
 // `emoji_invertChar` function on each character.
 void emoji_invertAll(char *utf8str) {
-  for (size_t i = 0; i < sizeof(utf8str); i++) {
-    printf("%d \n", utf8str[i]);
-    emoji_invertChar(&utf8str[i]);
+  for (size_t i = 0; i < strlen(utf8str); i++) {
+    
+     emoji_invertChar(&utf8str[i]);
   }
 }
 
 
 // Return a random emoji stored in new heap memory you have allocated.
 char *emoji_random_alloc() {
-  char *result = malloc(4);
+  char *result = malloc(sizeof(char) * 4);
   char byte1 = (rand() % 40) + 128;
   char byte2 = (rand() % 64) + 128;
-  result[1] = '\xF0';
-  result[2] = '\x9F';
-  result[3] = byte1;
-  result[4] = byte2;
-  printf("result: %s \n", result);
+  result[0] = '\xF0';
+  result[1] = '\x9F';
+  result[2] = byte1;
+  result[3] = byte2;
   return result;
 }
