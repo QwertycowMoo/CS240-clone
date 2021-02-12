@@ -37,10 +37,14 @@ int main(int argc, char *argv[]) {
   strcpy(gifChunk->type, "uiuc");
   gifChunk->data = malloc(gifChunk->len);
 
+  //since we used fseek to get the size of the file, we have to put the stream back to the beginning
+  if (fseek(gif, 0, SEEK_SET) != 0) {
+    printf("Something wrong with fseek");
+  }
   //put data into chunk
   fread(gifChunk->data, sizeof(char), gifChunk->len, gif);
 
-  printf("gifChunk data size: %ld", sizeof(gifChunk->data)/sizeof(char));
+  printf("gifChunk data size: %ld \n", sizeof(gifChunk->data));
 
   bytesWritten = PNGChunk_writeHeader(out);
   printf("PNG Header written (%lu bytes)\n", bytesWritten); 
