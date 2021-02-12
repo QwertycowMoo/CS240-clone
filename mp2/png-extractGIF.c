@@ -30,8 +30,6 @@ int main(int argc, char *argv[]) {
     if (chunk == NULL) { fclose(f); return 1; }
 
     if (strcmp(chunk->type, "uiuc") == 0) {
-      printf("uiuc chunk detected!");
-      
       break;
     }
 

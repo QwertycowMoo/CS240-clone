@@ -3,6 +3,9 @@
 #include "lib/png.h"
 #include <string.h>
 
+
+//./png-hideGIF 240.png taylor.gif 240_gif.png
+// gif is uiuc written (3044155 bytes)
 int main(int argc, char *argv[]) {
   if (argc != 4) {
     printf("Usage: %s <PNG File> <GIF File> <New Filename>\n", argv[0]);
@@ -14,31 +17,61 @@ int main(int argc, char *argv[]) {
   FILE *gif = fopen(argv[2], "r");
   FILE *out = fopen(argv[3], "w");
   size_t bytesWritten;
-
+  
   // Read the PNG header, exiting if it is not a valid PNG:
   int result = PNGChunk_readHeader(png);
   if (result != 0) { fclose(png); return result; }
 
   PNGChunk *gifChunk = malloc(sizeof(PNGChunk));
-  // Specify gifChunk
-    // find size of file
-  fseek(png, 0, SEEK_END);
-  uint32_t gifLength= ftell(png);
+
+  //get size of the gif
+  fseek(gif, 0, SEEK_END);
+  uint32_t gifLength= ftell(gif);
+  if (gifLength == -1) {
+    printf("Something wrong with gifLength");
+  }
   gifChunk->len = gifLength;
+  printf("The gif has %u bytes \n", gifLength);
+
+  //setup the chunk
+  strcpy(gifChunk->type, "uiuc");
+  gifChunk->data = malloc(gifChunk->len);
+
+  //put data into chunk
+  fread(gifChunk->data, sizeof(char), gifChunk->len, gif);
+
+  printf("gifChunk data size: %ld", sizeof(gifChunk->data)/sizeof(char));
 
   bytesWritten = PNGChunk_writeHeader(out);
   printf("PNG Header written (%lu bytes)\n", bytesWritten); 
-  // Read chunks until reaching "IEND" or in invalid chunk:
+
+  // Read chunks until IEND then insert the gifChunk before it
   while (1) {
     // Read chunk and ensure we get a valid result (exit on error):
     PNGChunk *chunk = PNGChunk_readChunk_alloc(png);
+
+   
     if (chunk == NULL) { fclose(png); return 1; }
 
+    // Check for the "IEND" chunk to insert the gifChunk:
+    if ( strcmp(chunk->type, "IEND") == 0 ) {
+      //write the uiuc chunk
+      bytesWritten = PNGChunk_writeChunk(out, gifChunk);
+      printf("PNG chunk %s written (%lu bytes)\n", gifChunk->type, bytesWritten);
+
+      //then write the IEND chunk
+      bytesWritten = PNGChunk_writeChunk(out, chunk);
+      printf("PNG chunk %s written (%lu bytes)\n", chunk->type, bytesWritten);
+
+      PNGChunk_free(chunk);
+      break;  
+    }
     // Report data about the chunk to the command line:
     bytesWritten = PNGChunk_writeChunk(out, chunk);
     printf("PNG chunk %s written (%lu bytes)\n", chunk->type, bytesWritten);
-
-    // Check for the "IEND" chunk to exit:
+    
+    
+  // Check for the "IEND" chunk to insert the gifChunk:
     if ( strcmp(chunk->type, "IEND") == 0 ) {
       PNGChunk_free(chunk);
       break;  
@@ -48,6 +81,7 @@ int main(int argc, char *argv[]) {
     PNGChunk_free(chunk);
   }
   
+  PNGChunk_free(gifChunk);
   fclose(png);
   fclose(gif);
   fclose(out);
