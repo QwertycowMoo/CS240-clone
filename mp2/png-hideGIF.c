@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   int result = PNGChunk_readHeader(png);
   if (result != 0) { fclose(png); return result; }
 
-  PNGChunk *gifChunk = malloc(sizeof(PNGChunk));
+
 
   //get size of the gif
   fseek(gif, 0, SEEK_END);

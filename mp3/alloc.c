@@ -7,6 +7,96 @@
 #include <string.h>
 #include <unistd.h>
 
+typedef struct _metadata_t {
+    unsigned int size;
+    unsigned char isUsed;
+} metadata_t;
+
+void *startOfHeap = NULL;
+
+typedef struct ListNode {
+    void *ptr;
+    struct ListNode *next;
+} ListNode;
+ 
+void print_heap() {
+    metadata_t *curMeta = startOfHeap;
+    void *endOfHeap = sbrk(0);
+    printf("-- Start of Heap (%p) --\n", startOfHeap);
+    while ((void *)curMeta < endOfHeap) {   // While we're before the end of the heap...
+        printf("metadata for memory %p: (%p, size=%d, isUsed=%d)\n", (void *)curMeta + sizeof(metadata_t), curMeta, curMeta->size, curMeta->isUsed);
+        curMeta = (void *)curMeta + curMeta->size + sizeof(metadata_t);
+    }
+    printf("-- End of Heap (%p) --\n\n", endOfHeap);
+}
+
+
+
+/**
+ * Allocate memory block
+ *
+ * Allocates a block of size bytes of memory, returning a pointer to the
+ * beginning of the block.  The content of the newly allocated block of
+ * memory is not initialized, remaining with indeterminate values.
+ *
+ * @param size
+ *    Size of the memory block, in bytes.
+ *
+ * @return
+ *    On success, a pointer to the memory block allocated by the function.
+ *
+ *    The type of this pointer is always void*, which can be cast to the
+ *    desired type of data pointer in order to be dereferenceable.
+ *
+ *    If the function failed to allocate the requested block of memory,
+ *    a null pointer is returned.
+ *
+ * @see http://www.cplusplus.com/reference/clibrary/cstdlib/malloc/
+ */
+void *malloc(size_t size) {
+
+    void *ptr;
+    // implement malloc:
+    fprintf(stderr, "Inside malloc, inserting with size %ld\n", size);  // You'll eventually want to remove this.
+
+    if (startOfHeap == NULL) {
+        startOfHeap = sbrk(0);
+        metadata_t *meta = sbrk(sizeof(metadata_t)); //allocates the metadata on the heap
+        meta->size = size;
+        meta->isUsed = 1;
+
+        ptr = sbrk(size);
+    } else {
+        metadata_t *meta = startOfHeap;
+        printf("\tcurrent Meta pointer: %p \n", meta);
+        while(meta->isUsed == 1 || size > meta->size) {
+            //this works but somethings off because i don't want to use "8" instead i want to use some pointer value or smthn
+            meta = meta + sizeof(metadata_t)/8 + meta->size/8;
+            printf("\tcurrent Meta pointer: %p \n", meta);
+            //is there a better way to check than this? I want to use null pointer but this works sooooooo
+            if (meta->size == 0) {
+                break;
+            }
+            
+        }
+        if (meta->size == 0) {
+            //@TODO: We need to implement block splitting
+            //makes a new chunk basically
+            printf("Making a new Chunk because there is no room");
+            metadata_t *meta = sbrk(sizeof(metadata_t)); //allocates the metadata on the heap
+            meta->size = size;
+            meta->isUsed = 1;
+            ptr = sbrk(size);
+        } else {
+            printf("Replacing an old chunk of memory");
+            meta->isUsed = 1;
+            ptr = meta + sizeof(metadata_t);
+        }
+    }
+    
+        print_heap();
+    return ptr;
+}
 
 /**
  * Allocate space for array in memory
@@ -33,36 +123,15 @@
  */
 void *calloc(size_t num, size_t size) {
     // implement calloc:
-    return NULL;
-}
+    fprintf(stderr, "Inside calloc, inserting with num %ld and size %ld\n", num, size);  // You'll eventually want to remove this.
+    if (startOfHeap == NULL){
+        startOfHeap = sbrk(0);
+    }
+    print_heap();
+    
 
-
-/**
- * Allocate memory block
- *
- * Allocates a block of size bytes of memory, returning a pointer to the
- * beginning of the block.  The content of the newly allocated block of
- * memory is not initialized, remaining with indeterminate values.
- *
- * @param size
- *    Size of the memory block, in bytes.
- *
- * @return
- *    On success, a pointer to the memory block allocated by the function.
- *
- *    The type of this pointer is always void*, which can be cast to the
- *    desired type of data pointer in order to be dereferenceable.
- *
- *    If the function failed to allocate the requested block of memory,
- *    a null pointer is returned.
- *
- * @see http://www.cplusplus.com/reference/clibrary/cstdlib/malloc/
- */
-void *malloc(size_t size) {
-    // implement malloc:
-    fprintf(stderr, "Inside malloc\n");  // You'll eventually want to remove this.
-
-    return NULL;
+    void *ptr = malloc(size * num);
+    return ptr;
 }
 
 
@@ -84,6 +153,8 @@ void *malloc(size_t size) {
  */
 void free(void *ptr) {
     // implement free:
+    metadata_t *meta = ptr - sizeof(metadata_t);
+    meta->isUsed = 0;
 }
 
 
@@ -134,5 +205,25 @@ void free(void *ptr) {
  */
 void *realloc(void *ptr, size_t size) {
     // implement realloc:
-    return NULL;
+    if (ptr == NULL) {
+        return malloc(size);
+    }
+    if (size == 0) {
+        free(ptr);
+        return NULL;
+    } 
+    metadata_t *ptr_meta = ptr - sizeof(metadata_t);
+    size_t cpy_size = ptr_meta->size < size ? ptr_meta->size : size;
+    //@TODO: find the next available spot in memory
+    //Rn its just gonna put it at the top of the heap
+    void *new_ptr = malloc(size);
+
+    if (new_ptr != NULL) {
+        //should I be using memcpy?
+        memcpy(new_ptr, ptr, cpy_size);
+        free(ptr);
+        ptr = new_ptr;
+    }
+
+    return ptr;
 }
