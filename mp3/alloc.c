@@ -70,27 +70,35 @@ void *malloc(size_t size) {
         metadata_t *meta = startOfHeap;
         printf("\tcurrent Meta pointer: %p \n", meta);
         while(meta->isUsed == 1 || size > meta->size) {
-            //this works but somethings off because i don't want to use "8" instead i want to use some pointer value or smthn
-            meta = meta + sizeof(metadata_t)/8 + meta->size/8;
+            meta = (void*) meta + sizeof(metadata_t) + meta->size;
             printf("\tcurrent Meta pointer: %p \n", meta);
-            //is there a better way to check than this? I want to use null pointer but this works sooooooo
             if (meta->size == 0) {
                 break;
             }
             
         }
         if (meta->size == 0) {
-            //@TODO: We need to implement block splitting
             //makes a new chunk basically
-            printf("Making a new Chunk because there is no room");
+            printf("Making a new Chunk because there is no room\n");
             metadata_t *meta = sbrk(sizeof(metadata_t)); //allocates the metadata on the heap
             meta->size = size;
             meta->isUsed = 1;
             ptr = sbrk(size);
         } else {
-            printf("Replacing an old chunk of memory");
+            printf("Replacing an old chunk of memory\n");
+            size_t old_size = meta->size;
+            ptr = (void*) meta + sizeof(metadata_t);
+            if (old_size - size > sizeof(metadata_t)) {   
+                meta->size = size;
+                //need to split this memory and create a new metadata chunk
+                //but if there's not enough memory to even create this small metadata part, we can't really use it
+                 metadata_t *new_meta = (void *) ptr + size;
+                new_meta->isUsed = 0;
+                new_meta->size = old_size - sizeof(metadata_t) - size;
+            }
             meta->isUsed = 1;
-            ptr = meta + sizeof(metadata_t);
+            
+           
         }
     }
     
@@ -153,8 +161,12 @@ void *calloc(size_t num, size_t size) {
  */
 void free(void *ptr) {
     // implement free:
+    printf("\n Freeing %p\n", ptr);
     metadata_t *meta = ptr - sizeof(metadata_t);
     meta->isUsed = 0;
+    void *next = ptr + meta->size;
+    if (next->isUsed = 0);
+    
 }
 
 
