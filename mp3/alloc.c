@@ -164,8 +164,13 @@ void free(void *ptr) {
     printf("\n Freeing %p\n", ptr);
     metadata_t *meta = ptr - sizeof(metadata_t);
     meta->isUsed = 0;
-    void *next = ptr + meta->size;
-    if (next->isUsed = 0);
+    metadata_t *next = ptr + meta->size;
+    if (next->isUsed == 0) {
+        //memory coalescing
+        meta->size = meta->size + next->size + sizeof(metadata_t);
+        next = NULL;
+    }
+    
     
 }
 
