@@ -71,27 +71,18 @@ void *malloc(size_t size) {
         int isFree = 0;
         
         metadata_t* free = listStart;
-        printf("\tcurrent Meta pointer: %p \n", free);
+        //printf("\tcurrent Meta pointer: %p \n", free);
         metadata_t* prev_free = NULL;
         while(free != NULL) {
-            if (free->size > size && free->isUsed == 0) {
+            if (free->size >= size && free->isUsed == 0) {
                 isFree = 1;
-                printf("found a free space at %p", free);
+                printf("found a free space at %p\n", free);
                 break;
             }
             prev_free = free;
             free = free->next;
         }
 
-        //previous iteration, not using free list
-        // while(meta->isUsed == 1 || size > meta->size) {
-        //     meta = (void*) meta + sizeof(metadata_t) + meta->size;
-        //     printf("\tcurrent Meta pointer: %p \n", meta);
-        //     if (meta->size == 0) {
-        //         break;
-        //     }
-            
-        // }
         if (isFree) {
             printf("Replacing an old chunk of memory\n");
             size_t old_size = free->size;
@@ -107,9 +98,12 @@ void *malloc(size_t size) {
                 if (listStart == free) {
                     listStart = new_meta;
                 }
+
                 new_meta->isUsed = 0;
                 new_meta->size = old_size - sizeof(metadata_t) - size;
                 new_meta->next = free->next;
+            } else {
+                listStart = free->next;
             }
             free->isUsed = 1;
             
@@ -157,7 +151,7 @@ void *calloc(size_t num, size_t size) {
     if (startOfHeap == NULL){
         startOfHeap = sbrk(0);
     }
-    print_heap();
+    //print_heap();
     
 
     void *ptr = malloc(size * num);
@@ -185,7 +179,9 @@ void free(void *ptr) {
     // implement free:
     printf("\n Freeing %p\n", ptr);
     metadata_t *meta = ptr - sizeof(metadata_t);
+    
     meta->isUsed = 0;
+    
     int newNode = 1;
 
     //remember that listStart is a metadata_t pointer since the block itself is a "listnode"
@@ -194,12 +190,18 @@ void free(void *ptr) {
         listStart = meta;
         listEnd = (metadata_t*) listStart;
     } else {
+        
+        if (meta < listStart) {
+            printf("meta is before listStart");
+            meta->next = listStart;
+            listStart = meta;
+        }
         //memory coalescing for memory blocks before our current pointer
         metadata_t* m = listStart;
         while(m != NULL) {
             //calculation for before
             if (m > meta) {
-                
+                printf("meta: %p\n", meta);
                 if ((void*)meta + sizeof(metadata_t) + meta->size == m) {
                     
                     meta->size = meta->size + m->size + sizeof(metadata_t);
@@ -208,7 +210,7 @@ void free(void *ptr) {
                     newNode = 0;
                 }
                 //the pointer is already passed the place so we don't have to check for forward
-                break;
+                //break;
             }
             if ((void*)m + sizeof(metadata_t) + m->size == meta) {
                 //do the coalescing
