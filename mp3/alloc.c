@@ -7,18 +7,22 @@
 #include <string.h>
 #include <unistd.h>
 
+//doubly linked list
+typedef struct ListNode {
+    struct ListNode *next;
+    struct _metadata_t *ptr;
+    struct ListNode *prev;
+} ListNode;
+
 typedef struct _metadata_t {
     unsigned int size;
     unsigned char isUsed;
 } metadata_t;
 
 void *startOfHeap = NULL;
+ListNode* listStart = NULL;
+ListNode* listEnd = NULL;
 
-typedef struct ListNode {
-    void *ptr;
-    struct ListNode *next;
-} ListNode;
- 
 void print_heap() {
     metadata_t *curMeta = startOfHeap;
     void *endOfHeap = sbrk(0);
@@ -55,6 +59,8 @@ void print_heap() {
  */
 void *malloc(size_t size) {
 
+
+    //There's some fucking segfault when mallocing after the frees.
     void *ptr;
     // implement malloc:
     fprintf(stderr, "Inside malloc, inserting with size %ld\n", size);  // You'll eventually want to remove this.
@@ -67,24 +73,31 @@ void *malloc(size_t size) {
 
         ptr = sbrk(size);
     } else {
+        //this is all broken right now, fixing free first
         metadata_t *meta = startOfHeap;
+        int isFree = 0;
         printf("\tcurrent Meta pointer: %p \n", meta);
-        while(meta->isUsed == 1 || size > meta->size) {
-            meta = (void*) meta + sizeof(metadata_t) + meta->size;
-            printf("\tcurrent Meta pointer: %p \n", meta);
-            if (meta->size == 0) {
+        ListNode* node = listStart;
+        while(node != NULL) {
+            meta = node->ptr;
+            if (meta->size > size && meta->isUsed == 0) {
+                node->next->next = node;
+                node->next = node->next->next;
+                isFree = 1;
                 break;
             }
-            
+            node = node->next;
         }
-        if (meta->size == 0) {
-            //makes a new chunk basically
-            printf("Making a new Chunk because there is no room\n");
-            metadata_t *meta = sbrk(sizeof(metadata_t)); //allocates the metadata on the heap
-            meta->size = size;
-            meta->isUsed = 1;
-            ptr = sbrk(size);
-        } else {
+        //previous iteration, not using free list
+        // while(meta->isUsed == 1 || size > meta->size) {
+        //     meta = (void*) meta + sizeof(metadata_t) + meta->size;
+        //     printf("\tcurrent Meta pointer: %p \n", meta);
+        //     if (meta->size == 0) {
+        //         break;
+        //     }
+            
+        // }
+        if (isFree) {
             printf("Replacing an old chunk of memory\n");
             size_t old_size = meta->size;
             ptr = (void*) meta + sizeof(metadata_t);
@@ -98,7 +111,14 @@ void *malloc(size_t size) {
             }
             meta->isUsed = 1;
             
-           
+        } else {
+            //makes a new chunk basically
+            printf("Making a new Chunk because there is no room\n");
+            metadata_t *meta = sbrk(sizeof(metadata_t)); //allocates the metadata on the heap
+            meta->size = size;
+            meta->isUsed = 1;
+            ptr = sbrk(size);
+
         }
     }
     
@@ -164,13 +184,52 @@ void free(void *ptr) {
     printf("\n Freeing %p\n", ptr);
     metadata_t *meta = ptr - sizeof(metadata_t);
     meta->isUsed = 0;
-    metadata_t *next = ptr + meta->size;
-    if (next->isUsed == 0) {
-        //memory coalescing
-        meta->size = meta->size + next->size + sizeof(metadata_t);
-        next = NULL;
+    int newNode = 1;
+
+    if (listStart == NULL) {
+        listStart = malloc(sizeof(ListNode));
+        listStart->ptr = meta;
+        listEnd = listStart;
+    } else {
+        //memory coalescing for memory blocks before our current pointer
+        ListNode* l = listStart;
+        while(l != NULL) {
+            //calculation for before
+            metadata_t* m = l->ptr;
+            if (m > meta) {
+                
+                if ((void*)meta + sizeof(metadata_t) + meta->size == m) {
+                    
+                    meta->size = meta->size + m->size + sizeof(metadata_t);
+                    m = NULL;
+                    l->prev->next = l->next;
+                    l->next->prev = l->prev;
+                    free(l);
+                    newNode = 0;
+                }
+                //the pointer is already passed the place so we don't have to check for forward
+                break;
+            }
+            if ((void*)m + sizeof(metadata_t) + m->size == meta) {
+                //do the coalescing
+                m->size = m->size + meta->size + sizeof(metadata_t);
+                meta = NULL;
+                newNode = 0;
+            }
+            l = l->next;
+        }
+
+        //if we cannot coalesce memory for this memory block, we add it to the end of the linkedList.
+        if (newNode == 1){
+            ListNode* node = malloc(sizeof(ListNode));
+            listEnd->ptr = meta;
+
+            listEnd->next = node;
+            node->prev = listEnd;
+            listEnd = node;
+        }
+        
     }
-    
     
 }
 
