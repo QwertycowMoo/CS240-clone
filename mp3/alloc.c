@@ -57,7 +57,7 @@ void *malloc(size_t size) {
     
     void *ptr;
     // implement malloc:
-    fprintf(stderr, "Inside malloc, inserting with size %ld\n", size);  // You'll eventually want to remove this.
+    //fprintf(stderr, "Inside malloc, inserting with size %ld\n", size);  // You'll eventually want to remove this.
 
     if (startOfHeap == NULL) {
         startOfHeap = sbrk(0);
@@ -76,7 +76,7 @@ void *malloc(size_t size) {
         while(free != NULL) {
             if (free->size >= size && free->isUsed == 0) {
                 isFree = 1;
-                printf("found a free space at %p\n", free);
+                //printf("found a free space at %p\n", free);
                 break;
             }
             prev_free = free;
@@ -84,7 +84,7 @@ void *malloc(size_t size) {
         }
 
         if (isFree) {
-            printf("Replacing an old chunk of memory\n");
+            //printf("Replacing an old chunk of memory\n");
             size_t old_size = free->size;
             ptr = (void*) free + sizeof(metadata_t);
             if (old_size - size > sizeof(metadata_t)) {   
@@ -109,7 +109,7 @@ void *malloc(size_t size) {
             
         } else {
             //makes a new chunk basically
-            printf("Making a new Chunk because there is no room\n");
+            //printf("Making a new Chunk because there is no room\n");
             metadata_t *meta = sbrk(sizeof(metadata_t)); //allocates the metadata on the heap
             meta->size = size;
             meta->isUsed = 1;
@@ -118,7 +118,7 @@ void *malloc(size_t size) {
         }
     }
     
-    print_heap();
+    //print_heap();
     return ptr;
 }
 
@@ -147,7 +147,7 @@ void *malloc(size_t size) {
  */
 void *calloc(size_t num, size_t size) {
     // implement calloc:
-    fprintf(stderr, "Inside calloc, inserting with num %ld and size %ld\n", num, size);  // You'll eventually want to remove this.
+    //fprintf(stderr, "Inside calloc, inserting with num %ld and size %ld\n", num, size);  // You'll eventually want to remove this.
     if (startOfHeap == NULL){
         startOfHeap = sbrk(0);
     }
@@ -177,7 +177,7 @@ void *calloc(size_t num, size_t size) {
  */
 void free(void *ptr) {
     // implement free:
-    printf("\n Freeing %p\n", ptr);
+    //printf("\n Freeing %p\n", ptr);
     metadata_t *meta = ptr - sizeof(metadata_t);
     
     meta->isUsed = 0;
@@ -186,34 +186,33 @@ void free(void *ptr) {
 
     //remember that listStart is a metadata_t pointer since the block itself is a "listnode"
     if (listStart == NULL) {
-        printf("listStart is Null");
+        //printf("listStart is Null");
         listStart = meta;
         listEnd = (metadata_t*) listStart;
     } else {
         
         if (meta < listStart) {
-            printf("meta is before listStart");
+            
             meta->next = listStart;
             listStart = meta;
         }
         //memory coalescing for memory blocks before our current pointer
         metadata_t* m = listStart;
         while(m != NULL) {
-            //calculation for before
+            
             if (m > meta) {
-                printf("meta: %p\n", meta);
+                //do the coalescing after
                 if ((void*)meta + sizeof(metadata_t) + meta->size == m) {
                     
                     meta->size = meta->size + m->size + sizeof(metadata_t);
                     meta->next = m->next;
-                    m = NULL;
+                    m = meta;
                     newNode = 0;
                 }
-                //the pointer is already passed the place so we don't have to check for forward
-                //break;
+            
             }
             if ((void*)m + sizeof(metadata_t) + m->size == meta) {
-                //do the coalescing
+                //do the coalescing before
                 m->size = m->size + meta->size + sizeof(metadata_t);
                 m->next = meta->next;
                 meta = NULL;
@@ -230,7 +229,7 @@ void free(void *ptr) {
         
     }
 
-    print_heap();
+    //print_heap();
     
 }
 
