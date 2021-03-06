@@ -44,10 +44,10 @@ void* merge(void* ptr) {
 	int* a2 = args->arr2;
 	int size1 = args->size1;
 	int size2 = args->size2;
-	int full_size = args->full_size;
+	int full_size = size1 + size2;
 	int out[full_size];
 
-	printf("Inside merge with a1: %d and a2: %d values_per_segment: %d and %d\n", a1[0], a2[0], size1, size2);
+	//printf("Inside merge with a1: %d and a2: %d values_per_segment: %d and %d\n", a1[0], a2[0], size1, size2);
 	int dupes = 0;
 
 	int a1_i = 0; //index of a1
@@ -76,8 +76,7 @@ void* merge(void* ptr) {
 					}
 				}
 			}
-		} else {
-			
+		} else {		
 			out[i] = a2[a2_i];
 			if(a2[a2_i] == a1[a1_i]) {
 				dupes++;
@@ -127,6 +126,9 @@ int main(int argc, char **argv) {
 	} else {
 		//fails for 8 since 25/8 = 3 but 8 * 4 = 32.
 		values_per_segment = (count / segmentCount) + 1;
+		if (values_per_segment * (segmentCount - 1) > count) {
+			values_per_segment = count / segmentCount;
+		}
 	}
 	
 	//setup arguments for sorting
@@ -139,6 +141,7 @@ int main(int argc, char **argv) {
 			args_sort[i].size = values_per_segment;
 		}
 	}
+	
 	//this sorts the entire thing 
 	for (int i = 0; i < segmentCount; i++) {
 		pthread_create(&tid[i], NULL, sort_routine, (void*) &args_sort[i]);
@@ -147,11 +150,14 @@ int main(int argc, char **argv) {
 	for (int i = 0; i < segmentCount; i++) {
 		pthread_join(tid[i], NULL);
 	}
-	for (int i = 0; i < count; i++) {
-		printf("%d \n", numbers[i]);
-	}
+	//print after segmented sort
+	// for (int i = 0; i < count; i++) {
+	// 	printf("%d \n", numbers[i]);
+	// }
+	
 	arg_merge_t arg_merge[segmentCount / 2];
 	for (int i = 0; i < segmentCount / 2; i++) {
+		
 		arg_merge[i].arr1 = numbers + (i * 2 * values_per_segment);
 		arg_merge[i].arr2 = numbers + (((i * 2) + 1) *values_per_segment);
 		arg_merge[i].size1 = values_per_segment;
@@ -161,17 +167,17 @@ int main(int argc, char **argv) {
 			} else {
 				arg_merge[i].size2 = values_per_segment;
 			}
-			arg_merge[i].full_size = count;
+			arg_merge[i].full_size = values_per_segment * 2;
 		} else {
 			arg_merge[i].size2 = values_per_segment;
 			arg_merge[i].full_size = values_per_segment * 2;
 		}
 	}
-
-
+	
 	while (segmentCount > 1) {
-
+		
 		int thread_loop = segmentCount / 2;
+		fprintf(stderr, "while loop with thread_loop %d\n", thread_loop);
 		if (segmentCount % 2 == 0) {
 			segmentCount = segmentCount / 2;
 		} else {
@@ -179,15 +185,18 @@ int main(int argc, char **argv) {
 		}
 		
 		for (int i = 0; i < thread_loop; i++) {
+			
 			pthread_create(&tid[i], NULL, merge, (void*) &arg_merge[i]);
 		}
 		for (int i = 0; i < thread_loop; i++) {
+			fprintf(stderr, "threadloop join\n");
 			pthread_join(tid[i], NULL);
 		}
-
-		for (int i = 0; i < count; i++) {
-			printf("%d \n", numbers[i]);
-		}
+		
+		//print after each thread run
+		// for (int i = 0; i < count; i++) {
+		// 	printf("%d \n", numbers[i]);
+		// }
 
 		values_per_segment = values_per_segment * 2;
 
@@ -204,6 +213,7 @@ int main(int argc, char **argv) {
 				arg_merge[i].arr2 = numbers + (((i * 2) + 1) * values_per_segment);
 				arg_merge[i].size1 = values_per_segment;
 				arg_merge[i].size2 = values_per_segment;
+				fprintf(stderr, "arr1: %p  arr2: %p  size1: %d size2: %d", arg_merge[i].arr1, arg_merge[i].arr2, arg_merge[i].size1, arg_merge[i].size2);
 				if (i == segmentCount / 2 - 1) {
 					
 					if (segmentCount % 2 == 0) {
@@ -223,11 +233,11 @@ int main(int argc, char **argv) {
 		
 	}
 
-	printf("------------ \n");
 	for (int i = 0; i < count; i++) {
 		
-		printf("%d \n", numbers[i]);
+		printf("%d\n", numbers[i]);
 	}
+	free(numbers);
 
 	return 0;
 }
