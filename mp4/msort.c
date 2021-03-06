@@ -45,14 +45,15 @@ void* merge(void* ptr) {
 	int size1 = args->size1;
 	int size2 = args->size2;
 	int full_size = size1 + size2;
-	int out[full_size];
+	//fprintf(stderr, "full size: %d", full_size);
+	int* out = malloc(sizeof(int) * full_size);
 
-	//printf("Inside merge with a1: %d and a2: %d values_per_segment: %d and %d\n", a1[0], a2[0], size1, size2);
+	//fprintf(stderr, "Inside merge with a1: %d and a2: %d values_per_segment: %d and %d\n", a1[0], a2[0], size1, size2);
 	int dupes = 0;
 
 	int a1_i = 0; //index of a1
 	int a2_i = 0; //index of a2
-	for (size_t i = 0; i < sizeof(out)/sizeof(out[0]); i++) {
+	for (int i = 0; i < full_size; i++) {
 		if (a1_i < size1) {
 			if (a2_i == size2) {
 				out[i] = a1[a1_i];
@@ -85,8 +86,10 @@ void* merge(void* ptr) {
 		}
 		
 	}
+	//fprintf(stderr, "After merge with a1: %d and a2: %d\n", a1[a1_i - 1], a2[a2_i - 1]);
 	fprintf(stderr, "Merged %d and %d elements with %d duplicates.\n", size1, size2, dupes);
-	memcpy((void*) a1, (void*) out, sizeof(out));
+	memcpy((void*) a1, (void*) out, full_size * sizeof(int));
+	free(out);
 	return (void*)a1;
 }
 
@@ -117,6 +120,14 @@ int main(int argc, char **argv) {
 		}
 		numbers[count] = i;
 		count++;
+	}
+	//
+	void* tmp = realloc(numbers, count * sizeof(int));
+	if (tmp == NULL) {
+		//we ran out of virtual memory
+		return 1;
+	} else {
+		numbers = tmp;
 	}
 	//setup threading
 	pthread_t tid[segmentCount];
@@ -177,7 +188,6 @@ int main(int argc, char **argv) {
 	while (segmentCount > 1) {
 		
 		int thread_loop = segmentCount / 2;
-		fprintf(stderr, "while loop with thread_loop %d\n", thread_loop);
 		if (segmentCount % 2 == 0) {
 			segmentCount = segmentCount / 2;
 		} else {
@@ -189,7 +199,6 @@ int main(int argc, char **argv) {
 			pthread_create(&tid[i], NULL, merge, (void*) &arg_merge[i]);
 		}
 		for (int i = 0; i < thread_loop; i++) {
-			fprintf(stderr, "threadloop join\n");
 			pthread_join(tid[i], NULL);
 		}
 		
@@ -213,7 +222,7 @@ int main(int argc, char **argv) {
 				arg_merge[i].arr2 = numbers + (((i * 2) + 1) * values_per_segment);
 				arg_merge[i].size1 = values_per_segment;
 				arg_merge[i].size2 = values_per_segment;
-				fprintf(stderr, "arr1: %p  arr2: %p  size1: %d size2: %d", arg_merge[i].arr1, arg_merge[i].arr2, arg_merge[i].size1, arg_merge[i].size2);
+				//fprintf(stderr, "arr1: %p  arr2: %p  size1: %d size2: %d", arg_merge[i].arr1, arg_merge[i].arr2, arg_merge[i].size1, arg_merge[i].size2);
 				if (i == segmentCount / 2 - 1) {
 					
 					if (segmentCount % 2 == 0) {
