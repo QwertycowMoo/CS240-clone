@@ -128,6 +128,7 @@ void *job_graduation() {
 
 
 int main() {
+  
   wallet_init(&wallet);
   srand (time(NULL));
 
