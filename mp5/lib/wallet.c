@@ -9,18 +9,21 @@
  */
 void wallet_init(wallet_t *wallet) {
   fprintf(stderr, "initialzing wallet\n");
+  wallet->lock = malloc(sizeof(pthread_mutex_t));
   wallet->head = NULL;
   wallet->tail = wallet->head;
-  pthread_mutex_init(wallet->lock);
+  pthread_mutex_init(wallet->lock, NULL);
 }
 
 /**
  * Returns the amount of a given `resource` in the given `wallet`.
  */
 int wallet_get(wallet_t *wallet, const char *resource) {
+  fprintf(stderr, "trying to get %s", resource);
   node_t* node = wallet->head;
-  while(node) {
+  while(node != NULL) {
     if(strcmp(resource, node->resource) == 0) {
+      fprintf(stderr, "match for %s", node->resource);
       return node->value;
     }
     node = (node_t*) node->next;
@@ -37,17 +40,17 @@ int wallet_get(wallet_t *wallet, const char *resource) {
 void wallet_change_resource(wallet_t *wallet, const char *resource, const int delta) {
   node_t* node = wallet->head;
   while(node != NULL) {
-    //pthread_mutex_lock(&lock);
+    pthread_mutex_lock(wallet->lock);
     if(strcmp(node->resource, resource) == 0) {
       //fprintf(stderr, "at %s node\n", resource);
-      //pthread_mutex_unlock(&lock);
+      pthread_mutex_unlock(wallet->lock);
       break;
     }
     node = (node_t*) node->next;
-    //pthread_mutex_unlock(&lock);
+    pthread_mutex_unlock(wallet->lock);
   }
   if (node == NULL) {
-    //fprintf(stderr, "trying to create a node for %s\n", resource);
+    fprintf(stderr, "trying to create a node for %s\n", resource);
     if (wallet->head == NULL) {
       pthread_mutex_lock(wallet->lock);
       //fprintf(stderr, "head is null \n");
@@ -114,4 +117,5 @@ void wallet_destroy(wallet_t *wallet) {
     to_free = temp;
   }
   pthread_mutex_destroy(wallet->lock);
+  free(wallet->lock);
 }
