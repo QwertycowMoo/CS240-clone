@@ -2,18 +2,15 @@
 
 #include <pthread.h>
 
+typedef struct node_t {
+  char* resource;
+  int value;
+  void* next;
+} node_t;
+
 typedef struct wallet_t_ {
-  int clover;
-  int clover4;
-  int tool;
-  int gem;
-  int apple;
-  int dna;
-  int blue;
-  int orange;
-  int green;
-  int books;
-  int grad;
+  node_t* head;
+  node_t* tail;
 } wallet_t;
 
 void wallet_init(wallet_t *wallet);

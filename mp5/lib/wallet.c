@@ -4,69 +4,28 @@
 
 #include "wallet.h"
 
-
+pthread_mutex_t lock;
 /**
  * Initalizes an empty wallet.
  */
 void wallet_init(wallet_t *wallet) {
-  //pthread_mutex_init(&wallet->lock, NULL);
-  wallet->clover = 0;
-  wallet->clover4 = 0;
-  wallet->tool = 0;
-  wallet->gem = 0;
-  wallet->apple = 0;
-  wallet->dna = 0;
-  wallet->blue = 0;
-  wallet->orange = 0;
-  wallet->green = 0;
-  wallet->books = 0;
-  wallet->grad = 0;
-  printf("Wallet pointer: %p \n", wallet);
-  }
-/**
-  *
-  */
-int* find_matching(wallet_t *wallet, const char *resource) {
-  if (strcmp(resource, "clover") == 0) {
-    return &wallet->clover;
-  } else if (strcmp(resource, "four-leaf-clover") == 0){
-    return &wallet->clover4;
-  }
-  else if (strcmp(resource, "tools") == 0){
-    return &wallet->tool;
-  }
-  else if (strcmp(resource, "gem") == 0){
-    return &wallet->gem;
-  }
-  else if (strcmp(resource, "green-apple") == 0){
-    return &wallet->apple;
-  }
-  else if (strcmp(resource, "dna") == 0){
-    return &wallet->dna;
-  }
- else if (strcmp(resource, "green-book") == 0){
-    return &wallet->green;
-  }
-  else if (strcmp(resource, "blue-book") == 0){
-    return &wallet->blue;
-  }
-  else if (strcmp(resource, "orange-book") == 0){
-    return &wallet->orange;
-  }
-  else if (strcmp(resource, "books") == 0){
-    return &wallet->books;
-  }
-  else if (strcmp(resource, "degree!") == 0){
-    return &wallet->grad;
-  }
-  return NULL;
+  fprintf(stderr, "initialzing wallet\n");
+  wallet->head = NULL;
+  wallet->tail = wallet->head;
 }
+
 /**
  * Returns the amount of a given `resource` in the given `wallet`.
  */
 int wallet_get(wallet_t *wallet, const char *resource) {
-  //we need a dictionary we're just gonna loop through all the possible things and string compare I don't feel like doing a dictionary implementation
-  return *find_matching(wallet, resource);
+  node_t* node = wallet->head;
+  while(node) {
+    if(strcmp(resource, node->resource) == 0) {
+      return node->value;
+    }
+    node = (node_t*) node->next;
+  }
+  return 0;
 }
 
 /**
@@ -76,22 +35,80 @@ int wallet_get(wallet_t *wallet, const char *resource) {
  *    there are several ways to accomplish this waiting and it does not have to be fancy.)
  */
 void wallet_change_resource(wallet_t *wallet, const char *resource, const int delta) {
-  if (delta < 0) {
-    if (wallet_get(wallet, resource) < delta) {
-      //wait
-      // pthread_mutex_lock(&wallet->lock, NULL);
-      //this is the hard part
+  node_t* node = wallet->head;
+  while(node != NULL) {
+    //pthread_mutex_lock(&lock);
+    if(strcmp(node->resource, resource) == 0) {
+      //fprintf(stderr, "at %s node\n", resource);
+      //pthread_mutex_unlock(&lock);
+      break;
+    }
+    node = (node_t*) node->next;
+    //pthread_mutex_unlock(&lock);
+  }
+  if (node == NULL) {
+    //fprintf(stderr, "trying to create a node for %s\n", resource);
+    if (wallet->head == NULL) {
+      pthread_mutex_lock(&lock);
+      //fprintf(stderr, "head is null \n");
+      wallet->head = (node_t*) malloc(sizeof(node_t));
+      wallet->tail = wallet->head;
+      wallet->tail->next = NULL;
+      node = wallet->head;
+      node->value = 0;
+      node->resource = malloc(sizeof(char) * 20); //20 char limit on the name of the resource
+      strcpy(node->resource, resource);
+      //fprintf(stderr, "created %s node \n", resource);
+      pthread_mutex_unlock(&lock); 
     } else {
-      *find_matching(wallet, resource) = *find_matching(wallet, resource) + delta;
+      //we don't have this resource yet
+      pthread_mutex_lock(&lock);
+      wallet->tail->next = malloc(sizeof(node_t));
+      wallet->tail = wallet->tail->next;
+      wallet->tail->next = NULL;
+      node = wallet->tail;
+      node->value = 0;
+      node->resource = malloc(sizeof(char) * 20); //20 char limit on the name of the resource
+      strcpy(node->resource, resource);
+      //fprintf(stderr, "created %s node", resource);
+      pthread_mutex_unlock(&lock); 
+      
+      //value management is done before
+    }
+    
+  }
+  if (delta < 0) {
+    if (delta < node->value) {
+      while(1) {
+        if (node->value >= delta) {
+          pthread_mutex_lock(&lock);
+          node->value = node->value + delta;
+          pthread_mutex_unlock(&lock);
+        }
+      }
+    } else {
+      pthread_mutex_lock(&lock);
+      node->value = node->value + delta;
+      pthread_mutex_unlock(&lock);
     }
   } else {
-    *find_matching(wallet, resource) = *find_matching(wallet, resource) + delta;
+    pthread_mutex_lock(&lock);
+    node->value = node->value + delta;
+    pthread_mutex_unlock(&lock);
   }
+
+  //fprintf(stderr, "%s now hasd %d \n", node->resource, node->value);
 }
 
 /**
  * Destroys a wallet, freeing all associated memory.
  */
 void wallet_destroy(wallet_t *wallet) {
-  printf("Wallet pointer: %p", wallet);
+  node_t* to_free = wallet->head;
+  while(to_free) {
+    node_t* temp = to_free->next;
+    free(to_free->resource);
+    free(to_free);
+    to_free = temp;
+  }
 }
