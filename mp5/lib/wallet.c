@@ -4,7 +4,6 @@
 
 #include "wallet.h"
 
-pthread_mutex_t lock;
 /**
  * Initalizes an empty wallet.
  */
@@ -12,6 +11,7 @@ void wallet_init(wallet_t *wallet) {
   fprintf(stderr, "initialzing wallet\n");
   wallet->head = NULL;
   wallet->tail = wallet->head;
+  pthread_mutex_init(wallet->lock);
 }
 
 /**
@@ -49,7 +49,7 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
   if (node == NULL) {
     //fprintf(stderr, "trying to create a node for %s\n", resource);
     if (wallet->head == NULL) {
-      pthread_mutex_lock(&lock);
+      pthread_mutex_lock(wallet->lock);
       //fprintf(stderr, "head is null \n");
       wallet->head = (node_t*) malloc(sizeof(node_t));
       wallet->tail = wallet->head;
@@ -59,10 +59,10 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
       node->resource = malloc(sizeof(char) * 20); //20 char limit on the name of the resource
       strcpy(node->resource, resource);
       //fprintf(stderr, "created %s node \n", resource);
-      pthread_mutex_unlock(&lock); 
+      pthread_mutex_unlock(wallet->lock); 
     } else {
       //we don't have this resource yet
-      pthread_mutex_lock(&lock);
+      pthread_mutex_lock(wallet->lock);
       wallet->tail->next = malloc(sizeof(node_t));
       wallet->tail = wallet->tail->next;
       wallet->tail->next = NULL;
@@ -71,30 +71,32 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
       node->resource = malloc(sizeof(char) * 20); //20 char limit on the name of the resource
       strcpy(node->resource, resource);
       //fprintf(stderr, "created %s node", resource);
-      pthread_mutex_unlock(&lock); 
+      pthread_mutex_unlock(wallet->lock); 
       
-      //value management is done before
+      //value management is done after
     }
     
   }
   if (delta < 0) {
     if (delta < node->value) {
+      //fprintf(stderr, "inside a loop for %s", node->resource);
       while(1) {
         if (node->value >= delta) {
-          pthread_mutex_lock(&lock);
+          pthread_mutex_lock(wallet->lock);
           node->value = node->value + delta;
-          pthread_mutex_unlock(&lock);
+          pthread_mutex_unlock(wallet->lock);
+	  break;
         }
       }
     } else {
-      pthread_mutex_lock(&lock);
+      pthread_mutex_lock(wallet->lock);
       node->value = node->value + delta;
-      pthread_mutex_unlock(&lock);
+      pthread_mutex_unlock(wallet->lock);
     }
   } else {
-    pthread_mutex_lock(&lock);
+    pthread_mutex_lock(wallet->lock);
     node->value = node->value + delta;
-    pthread_mutex_unlock(&lock);
+    pthread_mutex_unlock(wallet->lock);
   }
 
   //fprintf(stderr, "%s now hasd %d \n", node->resource, node->value);
@@ -111,4 +113,5 @@ void wallet_destroy(wallet_t *wallet) {
     free(to_free);
     to_free = temp;
   }
+  pthread_mutex_destroy(wallet->lock);
 }

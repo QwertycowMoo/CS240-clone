@@ -6,6 +6,7 @@ typedef struct node_t {
   char* resource;
   int value;
   void* next;
+  struct pthread_mutex_lock* lock;
 } node_t;
 
 typedef struct wallet_t_ {
