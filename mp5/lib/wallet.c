@@ -50,7 +50,7 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
   }
   //pthread_mutex_unlock(wallet->lock)
   if (node == NULL) {
-    fprintf(stderr, "trying to create a node for %s\n", resource);
+    //fprintf(stderr, "trying to create a node for %s\n", resource);
     if (wallet->head == NULL) {
       //pthread_mutex_lock(wallet->lock);
       //fprintf(stderr, "head is null \n");
@@ -82,18 +82,20 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
   }
   pthread_mutex_unlock(wallet->lock);
   if (delta < 0) {
+    pthread_mutex_lock(wallet->lock);
     if (delta < node->value) {
+      pthread_mutex_unlock(wallet->lock);
       //fprintf(stderr, "inside a loop for %s", node->resource);
       while(1) {
+        pthread_mutex_lock(wallet->lock);
         if (node->value >= delta) {
-          pthread_mutex_lock(wallet->lock);
           node->value = node->value + delta;
           pthread_mutex_unlock(wallet->lock);
 	  break;
         }
+        pthread_mutex_unlock(wallet->lock);
       }
     } else {
-      pthread_mutex_lock(wallet->lock);
       node->value = node->value + delta;
       pthread_mutex_unlock(wallet->lock);
     }
