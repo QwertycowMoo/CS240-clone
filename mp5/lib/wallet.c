@@ -10,9 +10,13 @@
 void wallet_init(wallet_t *wallet) {
   //fprintf(stderr, "initialzing wallet\n");
   wallet->lock = malloc(sizeof(pthread_mutex_t));
+  wallet->cond = malloc(sizeof(pthread_cond_t));
   wallet->head = NULL;
   wallet->tail = wallet->head;
   pthread_mutex_init(wallet->lock, NULL);
+  printf("initialized up to lock");
+  pthread_cond_init(wallet->cond, NULL);
+  printf("initialized up to cond");
 }
 
 /**
@@ -60,7 +64,6 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
       node = wallet->head;
       node->value = 0;
       node->resource = malloc(sizeof(char) * 20); //20 char limit on the name of the resource
-      pthread_cond_init(node->cond);
       strcpy(node->resource, resource);
       ///fprintf(stderr, "created %s node \n", resource);
       //pthread_mutex_unlock(wallet->lock); 
@@ -73,7 +76,6 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
       node = wallet->tail;
       node->value = 0;
       node->resource = malloc(sizeof(char) * 20); //20 char limit on the name of the resource
-      pthread_cond_init(node->cond);
       strcpy(node->resource, resource);
       //fprintf(stderr, "created %s node", resource);
       //pthread_mutex_unlock(wallet->lock); 
@@ -86,22 +88,36 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
   if (delta < 0) {
     pthread_mutex_lock(wallet->lock);
     if (delta < node->value) {
-      pthread_mutex_unlock(wallet->lock);
       //fprintf(stderr, "inside a loop for %s", node->resource);
       while(node->value >= delta) {
-        pthread_cond_wait(node->cond, wallet->lock);
+         //pthread_mutex_unlock(wallet->lock);
+         pthread_cond_wait(wallet->cond, wallet->lock);
       }
       pthread_mutex_lock(wallet->lock);
         node->value = node->value + delta;
-        pthread_cond_signal(node->cond);
+        pthread_cond_signal(wallet->cond);
       pthread_mutex_unlock(wallet->lock);
+      /*
+      while(1) {
+         pthread_mutex_lock(wallet->lock);
+         if (node->value >= delta) {
+            node->value = node->value + delta;
+            pthread_mutex_unlock(wallet->lock);
+            break;
+         }
+         pthread_mutex_unlock(wallet->lock);
+      }
+	*/
     } else {
       node->value = node->value + delta;
+      //pthread_cond_signal(wallet->cond); //in reality, this shouldn't allow any new jobs to run
+      //but we're putting it here for consistency
       pthread_mutex_unlock(wallet->lock);
     }
   } else {
     pthread_mutex_lock(wallet->lock);
     node->value = node->value + delta;
+    //pthread_cond_signal(wallet->cond);
     pthread_mutex_unlock(wallet->lock);
   }
 
@@ -121,4 +137,6 @@ void wallet_destroy(wallet_t *wallet) {
   }
   pthread_mutex_destroy(wallet->lock);
   free(wallet->lock);
+  pthread_cond_destroy(wallet->cond);
+  free(wallet->cond);
 }
