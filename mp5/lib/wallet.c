@@ -60,6 +60,7 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
       node = wallet->head;
       node->value = 0;
       node->resource = malloc(sizeof(char) * 20); //20 char limit on the name of the resource
+      pthread_cond_init(node->cond);
       strcpy(node->resource, resource);
       ///fprintf(stderr, "created %s node \n", resource);
       //pthread_mutex_unlock(wallet->lock); 
@@ -72,6 +73,7 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
       node = wallet->tail;
       node->value = 0;
       node->resource = malloc(sizeof(char) * 20); //20 char limit on the name of the resource
+      pthread_cond_init(node->cond);
       strcpy(node->resource, resource);
       //fprintf(stderr, "created %s node", resource);
       //pthread_mutex_unlock(wallet->lock); 
@@ -86,15 +88,13 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
     if (delta < node->value) {
       pthread_mutex_unlock(wallet->lock);
       //fprintf(stderr, "inside a loop for %s", node->resource);
-      while(1) {
-        pthread_mutex_lock(wallet->lock);
-        if (node->value >= delta) {
-          node->value = node->value + delta;
-          pthread_mutex_unlock(wallet->lock);
-	  break;
-        }
-        pthread_mutex_unlock(wallet->lock);
+      while(node->value >= delta) {
+        pthread_cond_wait(node->cond, wallet->lock);
       }
+      pthread_mutex_lock(wallet->lock);
+        node->value = node->value + delta;
+        pthread_cond_signal(node->cond);
+      pthread_mutex_unlock(wallet->lock);
     } else {
       node->value = node->value + delta;
       pthread_mutex_unlock(wallet->lock);
