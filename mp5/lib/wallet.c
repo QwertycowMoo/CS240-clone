@@ -14,9 +14,9 @@ void wallet_init(wallet_t *wallet) {
   wallet->head = NULL;
   wallet->tail = wallet->head;
   pthread_mutex_init(wallet->lock, NULL);
-  printf("initialized up to lock with size %d", sizeof(pthread_mutex_t));
+  //printf("initialized up to lock with size %d", sizeof(pthread_mutex_t));
   pthread_cond_init(wallet->cond, NULL);
-  printf("initialized up to cond with size %d", sizeof(pthread_cond_t));
+  //printf("initialized up to cond with size %d", sizeof(pthread_cond_t));
 }
 
 /**
@@ -82,16 +82,16 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
   }
   pthread_mutex_unlock(wallet->lock);
   if (delta < 0) {
+    pthread_mutex_lock(wallet->lock);
     if (delta < node->value) {
       //fprintf(stderr, "inside a loop for %s", node->resource);
       while(1) {
-	pthread_mutex_lock(wallet->lock);
-      	while(node->value >= delta) {
+      	while(node->value + delta < 0) {
          	//pthread_mutex_unlock(wallet->lock);
          	pthread_cond_wait(wallet->cond, wallet->lock);
       	}
-        	node->value = node->value + delta;
-        	pthread_cond_broadcast(wallet->cond);
+        node->value = node->value + delta;
+        pthread_cond_broadcast(wallet->cond);
       	pthread_mutex_unlock(wallet->lock);
         break;
       }	/*
@@ -106,7 +106,7 @@ void wallet_change_resource(wallet_t *wallet, const char *resource, const int de
       }
 	*/
     } else {
-      pthread_mutex_lock(wallet->lock);
+      //pthread_mutex_lock(wallet->lock);
       node->value = node->value + delta;
       pthread_cond_broadcast(wallet->cond); //in reality, this shouldn't allow any new jobs to run
       //but we're putting it here for consistency
