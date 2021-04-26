@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, jsonify
-import requests
+import requests, sqlite3
 app = Flask(__name__)
 
+conn = sqlite3.connect('stateServer.db')
 # TODO:
 # PUT /<key> – Adds a versioned object
 # GET /<key> – Retrieves the latest version of a key
