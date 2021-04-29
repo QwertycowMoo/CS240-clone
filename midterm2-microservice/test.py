@@ -26,6 +26,18 @@ r = requests.put(f"{host}/guest/jones")
 print("PUT /guest/jones")
 print_response(r)
 
+r = requests.put(f"{host}/guest/kev")
+print("PUT /guest/kev")
+print_response(r)
+
+r = requests.put(f"{host}/guest/z")
+print("PUT /guest/z")
+print_response(r)
+
+r = requests.put(f"{host}/guest/po")
+print("PUT /guest/po")
+print_response(r)
+
 # Chancellor Jones gets room service
 r = requests.get(f"{host}/guest/jones")
 print("GET /guest/jones")
