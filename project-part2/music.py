@@ -41,7 +41,7 @@ def create_song(base_url):
         for i in range(len(strValue)):
             if strValue[i] == '"tempo":':
                 i += 1
-                t = int(strValue[i][:-1])
+                t = float(strValue[i][:-1])
                 met_mark = tempo.MetronomeMark(number=t)
                 met_mark.offset = totalOffset
                 notes_list.append(met_mark)
