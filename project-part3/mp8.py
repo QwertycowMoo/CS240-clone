@@ -7,6 +7,7 @@ store = {}
 # PUT
 @mp8_server.route('/<key>', methods=["PUT"])
 def put(key):
+  print("mp8 server put")
   if key not in store:
     store[key] = []
     version = 1
