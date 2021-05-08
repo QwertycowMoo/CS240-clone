@@ -1,4 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify
+from io import BytesIO
+from PIL import Image
 mp8_server = Blueprint("mp8_server", __name__)
 
 store = {}
@@ -16,7 +18,7 @@ def put(key):
 
   store[key].append({
     "version": version,
-    "value": request.data.decode("utf-8")
+    "value": Image.open(BytesIO(request.data))
   })
 
   return f"Key `{key}` added as v{version}.", 200
