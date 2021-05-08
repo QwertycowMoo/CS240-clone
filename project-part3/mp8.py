@@ -35,6 +35,7 @@ def get_key(key):
   # img = ["value"]
   # img.save(imgByteArr, format=img.format)
   # img_r = imgByteArr.getvalue()
+  print(type(store[key][index]["value"]))
   return store[key][index]["value"], 200
 
 
