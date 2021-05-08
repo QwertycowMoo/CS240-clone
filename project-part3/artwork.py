@@ -12,7 +12,7 @@ artwork_server = Blueprint("artwork_server", __name__)
 def post_image(key):
   print("artwork server put")
   print(request.data)
-  jpg = request.data
+  jpg = Image.open(request.data)
   jpg.save("temp.jpg")
    
   r = requests.post(
