@@ -11,7 +11,8 @@ artwork_server = Blueprint("artwork_server", __name__)
 @artwork_server.route('/<key>', methods=["POST"])
 def post_image(key):
   print("artwork server put")
-  jpg = request.files['image']
+  print(request.data)
+  jpg = request.data
   jpg.save("temp.jpg")
    
   r = requests.post(
@@ -23,7 +24,7 @@ def post_image(key):
   )
   if r.status_code != 200 :
     return "There's something wrong with the DeepDream API.", 500
-    
+
   ret = r.json()
   print(ret)
   print(ret['output_url'])
