@@ -18,7 +18,7 @@ def put(key):
 
   store[key].append({
     "version": version,
-    "value": Image.open(BytesIO(request.data))
+    "value": request.data
   })
 
   return f"Key `{key}` added as v{version}.", 200
@@ -31,11 +31,11 @@ def get_key(key):
     return f"Key `{key}` not found.", 404
 
   index = len(store[key]) - 1
-  imgByteArr = BytesIO()
-  img = store[key][index]["value"]
-  img.save(imgByteArr, format=img.format)
-  img_r = imgByteArr.getvalue()
-  return img_r, 200
+  # imgByteArr = BytesIO()
+  # img = ["value"]
+  # img.save(imgByteArr, format=img.format)
+  # img_r = imgByteArr.getvalue()
+  return jsonify(store[key][index]), 200
 
 
 # GET /<key>/<version>
