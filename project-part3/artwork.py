@@ -29,7 +29,7 @@ def post_image(key):
   img_dream = img_r.content
   print(type(img_dream))
   print("making put request to state server")
-  url = "http://localhost:5000"
+  url = "http://localhost:5000/"
   requests.put(url + key, data = img_dream)
 
   return img_dream, 200
