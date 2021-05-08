@@ -32,7 +32,7 @@ def get_key(key):
 
   index = len(store[key]) - 1
   imgByteArr = BytesIO()
-  img = store[key][index]
+  img = store[key][index]["value"]
   img.save(imgByteArr, format=img.format)
   img_r = imgByteArr.getvalue()
   return jsonify(img_r), 200
