@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, make_response
 from io import BytesIO
 from PIL import Image
 mp8_server = Blueprint("mp8_server", __name__)
@@ -35,8 +35,12 @@ def get_key(key):
   # img = ["value"]
   # img.save(imgByteArr, format=img.format)
   # img_r = imgByteArr.getvalue()
-  print(type(store[key][index]["value"]))
-  return store[key][index]["value"], 200
+  img = store[key][index]["value"]
+  response = make_response(img)
+  response.headers.set("Content-Type", "image/jpeg")
+  response.headers.set(
+        'Content-Disposition', 'attachment', filename=key + ".jpg")
+  return response, 200
 
 
 # GET /<key>/<version>
