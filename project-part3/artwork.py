@@ -26,10 +26,10 @@ def post_image(key):
 
   ret = r.json()
   img_r = requests.get(ret['output_url'])
-  file = open("temp_dream.jpg", "wb")
-  file.write(img_r.content)
-  file.close
   img_dream = img_r.content
  
-  print()
+  print("making put request to state server")
+  url = "http://localhost:5000"
+  requests.put(url + key, data = img_dream)
+
   return img_dream, 200
