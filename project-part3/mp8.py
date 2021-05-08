@@ -35,7 +35,7 @@ def get_key(key):
   img = store[key][index]["value"]
   img.save(imgByteArr, format=img.format)
   img_r = imgByteArr.getvalue()
-  return jsonify(img_r), 200
+  return img_r, 200
 
 
 # GET /<key>/<version>
