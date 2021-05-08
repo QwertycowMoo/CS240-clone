@@ -11,8 +11,6 @@ artwork_server = Blueprint("artwork_server", __name__)
 @artwork_server.route('/<key>', methods=["POST"])
 def post_image(key):
   print("artwork server put")
-  raw = request.data.decode('utf-8')
-  print(raw)
   jpg = Image.open(BytesIO(request.data))
   jpg.save("temp.jpg")
    
