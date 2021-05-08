@@ -11,8 +11,6 @@ artwork_server = Blueprint("artwork_server", __name__)
 @artwork_server.route('/<key>', methods=["POST"])
 def post_image(key):
   print("artwork server put")
-  raw = request.data.decode('utf-8')
-  print(raw)
   jpg = Image.open(BytesIO(request.data))
   jpg.save("temp.jpg")
    
@@ -27,12 +25,11 @@ def post_image(key):
     return "There's something wrong with the DeepDream API.", 500
 
   ret = r.json()
-  print(ret)
-  print(ret['output_url'])
   img_r = requests.get(ret['output_url'])
   file = open("temp_dream.jpg", "wb")
   file.write(img_r.content)
   file.close
   img_dream = img_r.content
  
+  print()
   return img_dream, 200
