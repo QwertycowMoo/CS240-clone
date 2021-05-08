@@ -31,7 +31,11 @@ def get_key(key):
     return f"Key `{key}` not found.", 404
 
   index = len(store[key]) - 1
-  return jsonify( store[key][index] ), 200
+  imgByteArr = BytesIO()
+  img = store[key][index]
+  img.save(imgByteArr, format=img.format)
+  img_r = imgByteArr.getvalue()
+  return jsonify(img_r), 200
 
 
 # GET /<key>/<version>
